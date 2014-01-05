@@ -6,7 +6,7 @@
  * and map classes as well as the custom Production and Definition
  * classes provided with the assignment.
  */
- 
+
 #include <map>
 #include <fstream>
 #include "definition.h"
@@ -40,6 +40,18 @@ static void readGrammar(ifstream& infile, map<string, Definition>& grammar)
 }
 
 /**
+ * Recursively generates a random terminal sequence using a
+ * client provided grammar map.
+ *
+ * @param seed    the non-terminal seed to expand
+ * @param grammar a map<string, Definition> that maps non-terminals
+ *                to their definitions
+ * @param result a vector<string> that contains the recursively
+ *        defined terminal sequence.
+ */
+void generateTerminalSequence(string seed, map<string, Definition>& map, vector<string>& result);
+
+/**
  * Performs the rudimentary error checking needed to confirm that
  * the client provided a grammar file.  It then continues to
  * open the file, read the grammar into a map<string, Definition>,
@@ -60,20 +72,44 @@ int main(int argc, char *argv[])
   if (argc == 1) {
     cerr << "You need to specify the name of a grammar file." << endl;
     cerr << "Usage: rsg <path to grammar text file>" << endl;
-    return 1; // non-zero return value means something bad happened 
+    return 1; // non-zero return value means something bad happened
   }
-  
+
   ifstream grammarFile(argv[1]);
   if (grammarFile.fail()) {
     cerr << "Failed to open the file named \"" << argv[1] << "\".  Check to ensure the file exists. " << endl;
     return 2; // each bad thing has its own bad return value
   }
-  
+
   // things are looking good...
   map<string, Definition> grammar;
   readGrammar(grammarFile, grammar);
   cout << "The grammar file called \"" << argv[1] << "\" contains "
        << grammar.size() << " definitions." << endl;
-  
+
+  for (int i = 1; i <= 3; i++) {
+      cout << "Version " << i << ": ---------------------------" << endl;
+      vector<string> result;
+      generateTerminalSequence("<start>", grammar, result);
+
+      for (Production::iterator curr = result.begin(); curr != result.end(); ++curr) {
+          cout << *curr;
+      }
+      cout << endl << endl;
+  }
+
   return 0;
+}
+
+void generateTerminalSequence(string seed, map<string, Definition>& grammar, vector<string>& result) {
+  Production prod = grammar[seed].getRandomProduction();
+
+  for (Production::iterator curr = prod.begin(); curr != prod.end(); ++curr) {
+      if (!grammar.count(*curr)) {
+          result.push_back(*curr);
+          result.push_back(" ");
+      } else {
+          generateTerminalSequence(*curr, grammar, result);
+      }
+  }
 }
